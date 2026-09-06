@@ -32,15 +32,39 @@ python3 <<'PY'
 # mi.set_variant('cuda_ad_rgb')  # or 'llvm_ad_rgb' if CPU-only Vast
 #
 # # Load one 3D asset per (candidate_id, animation_frame) pair.
-# # Hammersley view sampling: N_views deterministic points on the sphere
-# # (see CLAUDE.md's "sphere_hammersley_sequence camera sequence" rule)
-# def hammersley_views(n):
-#     views = []
-#     for i in range(n):
-#         phi = 2 * math.pi * i / n
-#         theta = math.acos(1 - 2 * ((i * 0.6180339887) % 1))  # golden-ratio second axis
-#         views.append((theta, phi))
-#     return views
+# # Hammersley view sampling per CLAUDE.md's "sphere_hammersley_sequence
+# # camera sequence" rule. Uses the TRELLIS / Pixal3D canonical impl
+# # (voxhammer-upstream/trellis/utils/random_utils.py): stratified n/N on
+# # the first axis, Halton (= van der Corput base-2 for dim-1=1) on the
+# # second, inverse-CDF to (theta, phi). Vendored below so this script
+# # doesn't require the trellis package on the Vast instance.
+# def halton(i, base=2):
+#     r, f = 0.0, 1.0 / base
+#     while i > 0:
+#         r += (i % base) * f
+#         f /= base
+#         i //= base
+#     return r
+#
+# def sphere_hammersley_sequence(n, num_samples, offset=(0, 0), remap=False):
+#     u = n / num_samples + offset[0] / num_samples
+#     v = halton(n) + offset[1]
+#     if remap:
+#         u = 2 * u if u < 0.25 else 2 / 3 * u + 1 / 3
+#     theta = math.acos(1 - 2 * u) - math.pi / 2
+#     phi = v * 2 * math.pi
+#     return phi, theta
+#
+# def hammersley_views(num_samples):
+#     return [sphere_hammersley_sequence(i, num_samples) for i in range(num_samples)]
+#
+# # Coverage sizing: N must be large enough that Hammersley samples cover
+# # every fal-style canonical angle (4 elev × 8 azim × 3 dist = 96 uniform
+# # cells on sphere × log-distance) with no gaps. Hammersley's low-discrepancy
+# # bound (O((log N)/N)) means N=96 gives ~1 expected sample/cell but with
+# # variance; N=256 usually covers all cells; N=512 guarantees coverage plus
+# # ~5 samples per cell for training-signal density. Default N=512.
+# N_VIEWS = 512
 #
 # # For each view, render RGB + depth AOV + normal AOV + blendshape drive
 # # emit as parquet+zstd (ETNF: shape_id, view_idx, aov_kind, aov_data, ...)
