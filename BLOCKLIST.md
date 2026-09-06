@@ -1247,31 +1247,46 @@ spare), large models at NF4 (Wan-VACE, VoxHammer).
 `spot-broker` (managed Vast/RunPod deploys) is archived alongside this
 row.
 
-### Vast.ai is blocklisted as rented compute — no budget
+### ~~Vast.ai is blocklisted as rented compute — no budget~~ — unblocked 2026-09-06
 
-Same reason. The operator does not have money for per-hour spot rentals.
-Vast.ai was the workspace's active rented-compute path (`spot-broker`
-service, `vast-market-snapshots` corpus of pricing data, three ETNF
-Parquet snapshots recording ~40% churn per ~12 min at the hot
-$0.18-0.22 band). Neither survives the funding constraint.
+**Un-blocked 2026-09-06 for MaskScore-{Image,Text,Motion,Audio} QAFT
+training** on Gemma-4-12B, per the "one backbone, many heads" doctrine
+(`gemma4-shared-backbone` memory). Budget cap per training run TBD;
+current Vast account balance ~$45 (2026-09-06) covers ~one A6000
+training pass per modality at the estimated $3-15/head, so the total
+four-modality pass fits under one operator sign-off if the shape holds.
 
-The Vast.ai pass this row retracts was estimated at ~$60-115 for a 115
-GPU-hour EditScore-72B corpus scoring run — cheaper than RunPod's
-per-second billing but still money the workspace does not have.
+**Retraction preservation** (original blocklist reason, kept for
+history): operator did not have per-hour rental budget; the workspace's
+Vast path (`spot-broker` service, `vast-market-snapshots` corpus of
+pricing data, three ETNF Parquet snapshots recording ~40% churn per
+~12 min at the hot $0.18-0.22 band) was archived alongside. A prior
+Vast pass was estimated at ~$60-115 for a 115 GPU-hour EditScore-72B
+corpus scoring run — cheaper than RunPod's per-second billing but
+still money the workspace did not have. The un-block reverses this
+for the specific MaskScore training workload; larger corpus-scoring
+runs stay under scrutiny.
 
-**What is blocked.** Vast.ai as an execution target for corpus
-generation, model serving, or any interactor path.
+**What is now permitted.** Vast.ai as an execution target for
+MaskScore-Image / Text / Motion / Audio QAFT training on Gemma-4-12B
+(see `2-contract/weftspun-agreements/scripts/train-maskscore-*.sh`).
+Instance shape recommendation: RTX A6000 48GB @ ~$0.50-0.80/hr from
+verified providers; A100 80GB or H100 80GB acceptable if throughput
+matters. Instances self-destroy on exit via a bootstrap trap
+(`scripts/vast-bootstrap.sh`).
 
-**What replaces it.** Same as RunPod above: local desktop GPU only. The
-precision-policy retraction (Condition 5 gone 2026-09-02) makes corpus
-generation on the 3090 real; the funding constraint on rented compute
-stays regardless.
+**What stays blocked.** Vast.ai for open-ended corpus generation,
+model serving, or any interactor path not on the MaskScore training
+list above. Corpus-scoring passes on the scale of the 115 GPU-hour
+EditScore-72B run stay under scrutiny — this row un-blocks the
+specific MaskScore workload, not "Vast is fine for everything."
 
-`spot-broker` and `vast-market-snapshots` are archived alongside this
-row. The HF dataset `chibifire/vast-market-snapshots` stays as
-historical record of Vast pricing during the period the workspace
-observed it — the numbers stopped being actionable when the funding
-did.
+`vast-market-snapshots` is un-archived to `v-sekai-fabric/vast-market-snapshots`
+(as a workspace fork; the archive at `V-Sekai-archive/vast-market-snapshots`
+still exists — HERD's token doesn't have admin rights to transfer or
+un-archive that side). `spot-broker` stays dead (404). Auto-provisioning
+is manual `vastai launch` + the bootstrap script for now. The HF
+dataset `chibifire/vast-market-snapshots` stays as historical record.
 
 ### bnb NF4 4-bit is blocklisted as a QAFT / QAT path
 
