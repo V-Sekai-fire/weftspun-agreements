@@ -58,6 +58,14 @@ python3 <<'PY'
 # def hammersley_views(num_samples):
 #     return [sphere_hammersley_sequence(i, num_samples) for i in range(num_samples)]
 #
+# # Coverage sizing: N must be large enough that Hammersley samples cover
+# # every fal-style canonical angle (4 elev × 8 azim × 3 dist = 96 uniform
+# # cells on sphere × log-distance) with no gaps. Hammersley's low-discrepancy
+# # bound (O((log N)/N)) means N=96 gives ~1 expected sample/cell but with
+# # variance; N=256 usually covers all cells; N=512 guarantees coverage plus
+# # ~5 samples per cell for training-signal density. Default N=512.
+# N_VIEWS = 512
+#
 # # For each view, render RGB + depth AOV + normal AOV + blendshape drive
 # # emit as parquet+zstd (ETNF: shape_id, view_idx, aov_kind, aov_data, ...)
 raise SystemExit("TODO(peer): implement Mitsuba+Hammersley corpus render loop")
