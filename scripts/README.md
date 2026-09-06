@@ -13,8 +13,27 @@ QAFT runs. Landed 2026-09-06 alongside the Vast un-blocklist row
   script. `trap cleanup EXIT` calls `vastai destroy` no matter how the
   workload exits.
 
-All 9 MaskScore modality heads (per the amended
-`maskscore-is-editscore-analog` memory 2026-09-06):
+**Upstream sequence** (runs BEFORE any MaskScore head):
+
+- `run-mitsuba-hammersley-corpus.sh` — task #147, first Vast workload.
+  Deterministic Hammersley view sampling + Mitsuba 3 renders emitting
+  RGB/depth/normals AOVs + blendshape/pose ground truth. Folds in
+  task #67 (parked ANNY-SOMA render). Publishes to Tigris +
+  `chibifire/mitsuba-hammersley-3d-corpus` HF dataset. Mitsuba is the
+  sanctioned constructed-synthetic renderer (answers the Blender
+  blocklist row's reproducibility concern).
+
+- `train-gemma4-3d-vision-ft.sh` — task #146, second Vast workload.
+  Consumes the Mitsuba corpus; QAFT fine-tunes Gemma-4-12B's vision
+  head + adapter on cross-view consistency + view synthesis + latent
+  reconstruction. Emits `chibifire/gemma-4-12B-3d-aware-qat`, which
+  supersedes vanilla `chibifire/gemma-4-12B-it-qat-q4_0-unquantized`
+  as the MaskScore backbone.
+
+**Then** all 9 MaskScore modality heads (per the amended
+`maskscore-is-editscore-analog` memory 2026-09-06). Each script's
+BASE_3D variable is commented in for use once task #146 lands; until
+then, all 9 fall back to the vanilla Gemma-4-12B QAT base with a note:
 
 - `train-maskscore-image.sh` — LoRA on EditReward-Bench. **Runnable.**
 - `train-maskscore-text.sh` — code-diff / instruction rerank. BLOCKED on `TODO(dataset)`.
@@ -46,9 +65,11 @@ WORKLOAD             # cosmetic, for the fleet registration row
 
 ## Cost expectations (2026-09-06 baseline)
 
-| workload                | GPU              | ~cost/hr   | ~duration | ~run cost |
-|-------------------------|------------------|------------|-----------|-----------|
-| MaskScore-Image         | RTX A6000 48 GB  | $0.50-0.80 | 2-6h      | $3-15     |
+| workload                                | GPU                   | ~cost/hr   | ~duration | ~run cost |
+|-----------------------------------------|-----------------------|------------|-----------|-----------|
+| **#147 Mitsuba+Hammersley corpus**      | CPU-heavy (any 16c+)  | $0.10-0.30 | 6-24h     | $2-8      |
+| **#146 Gemma-4-12B 3D-shape FT**        | RTX A6000 48 GB       | $0.50-0.80 | 6-12h     | $5-15     |
+| MaskScore-Image                         | RTX A6000 48 GB       | $0.50-0.80 | 2-6h      | $3-15     |
 | MaskScore-Text          | RTX A6000 48 GB  | $0.50-0.80 | 1-3h      | $2-8      |
 | MaskScore-Motion        | RTX A6000 48 GB  | $0.50-0.80 | 2-6h      | $3-15     |
 | MaskScore-Audio         | RTX A6000 48 GB  | $0.50-0.80 | 3-8h      | $4-20     |
@@ -58,11 +79,13 @@ WORKLOAD             # cosmetic, for the fleet registration row
 | MaskScore-Blendshape    | RTX A6000 48 GB  | $0.50-0.80 | 2-4h      | $2-10     |
 | MaskScore-Video         | RTX A6000 48 GB  | $0.50-0.80 | 4-10h     | $5-25     |
 
-All fit A6000 48 GB — same 40 GB Gemma-4-12B QAT working set + per-modality
-LoRA + projector adds only ~200-500 MB. **Full-fleet sweep: $30-140.**
-Current Vast account balance ~$45.62 (2026-09-06) covers roughly the first
-3-4 modalities; full 9-head sweep needs an operator top-up to ~$150 for
-comfortable headroom.
+Corpus (#147) runs on CPU-only Vast offers (cheaper). 3D-shape FT (#146)
+and all 9 MaskScore heads fit A6000 48 GB — same 40 GB Gemma-4-12B QAT
+working set + per-modality LoRA + projector adds only ~200-500 MB.
+**Full sequence sweep (#147 → #146 → 9 MaskScore heads): $37-163.**
+Current Vast account balance ~$45.62 (2026-09-06) covers #147 + #146 +
+first 2-3 MaskScore heads; full pipeline needs an operator top-up to
+~$200 for comfortable headroom.
 
 ## Related memories
 

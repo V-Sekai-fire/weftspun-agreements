@@ -16,7 +16,11 @@ set -euo pipefail
 : "${HF_TOKEN:?bootstrap must export HF_TOKEN}"
 : "${VAST_INSTANCE_ID:?bootstrap must export VAST_INSTANCE_ID}"
 
-BASE=chibifire/gemma-4-12B-it-qat-q4_0-unquantized
+# Base: chibifire/gemma-4-12B-3d-aware-qat (task #146) — supersedes vanilla
+# gemma-4-12B-QAT once #146 lands. Until then, fall back to the vanilla base
+# noted below; the vanilla suffices for Text and Audio heads (no 3D dep).
+# BASE_3D=chibifire/gemma-4-12B-3d-aware-qat  # activate once task #146 lands
+BASE=chibifire/gemma-4-12B-it-qat-q4_0-unquantized  # fallback until #146
 DATASET=TODO_motion_kl  # TODO(motion-kl) — operator or motion-domain expert names
 OUT_REPO=chibifire/MaskScore-Motion-Gemma-4-12B-QAT-LoRA
 WORK=/workspace/maskscore-motion

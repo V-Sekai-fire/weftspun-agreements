@@ -123,9 +123,10 @@ bao kv put "agents/data/vast-${VAST_INSTANCE_ID}" \
     workload="${WORKLOAD:-unknown}" \
     owner="vast-${VAST_INSTANCE_ID}"
 
-# --- 8. Install HF CLI + hf-transfer for the training scripts ---
+# --- 8. Install HF CLI + hf-transfer + Mitsuba for the training/render scripts ---
 pip install -q --upgrade huggingface_hub hf_transfer transformers peft \
-    accelerate datasets bitsandbytes torch
+    accelerate datasets bitsandbytes torch \
+    mitsuba drjit  # for run-mitsuba-hammersley-corpus.sh (task #147)
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
 # --- 9. Hand off to the per-workload training script ---
