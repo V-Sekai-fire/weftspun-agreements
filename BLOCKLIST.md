@@ -1288,6 +1288,43 @@ un-archive that side). `spot-broker` stays dead (404). Auto-provisioning
 is manual `vastai launch` + the bootstrap script for now. The HF
 dataset `chibifire/vast-market-snapshots` stays as historical record.
 
+**Sequenced workloads for the un-block** (see
+`2-contract/weftspun-agreements/scripts/`):
+
+1. **Task #147 — Mitsuba 3 + Hammersley corpus generator.** First
+   Vast workload. Deterministic (view × time) Hammersley sampling
+   over 3D latents from TRELLIS.2 / Pixal3D / VoxHammer + animated
+   ANNY/SOMA rigs. Emits per-frame RGB + depth AOV + normals AOV
+   + blendshape weights + ground-truth pose params. Folds in
+   task #67 (HERO's parked ANNY-SOMA corpus render).
+   `run-mitsuba-hammersley-corpus.sh`.
+
+2. **Task #146 — Gemma-4-12B 3D-shape vision FT.** Second Vast
+   workload. Consumes #147's corpus. Fine-tunes Gemma-4-12B's
+   vision head + adapter on cross-view consistency + view synthesis
+   + latent reconstruction. QAFT-4bit per `4bit-qaft-is-default`
+   memory. Emits `chibifire/gemma-4-12B-3d-aware-qat` which
+   supersedes vanilla Gemma-4-12B QAT as the MaskScore backbone.
+   `train-gemma4-3d-vision-ft.sh`.
+
+3. **9 MaskScore heads on Vast.** Each per-modality LoRA + projector
+   over `chibifire/gemma-4-12B-3d-aware-qat` (with fallback to the
+   vanilla base until #146 lands). Image / Text / Motion / Audio /
+   Mesh / Pose / Depth / Blendshape / Video, per amended
+   `maskscore-is-editscore-analog` memory.
+
+### Mitsuba 3 is the sanctioned constructed-synthetic renderer
+
+Answers the Blender blocklist row's "renders not reproducible across
+versions" concern. Mitsuba 3's physically-based path tracer produces
+deterministic output for a given (scene, sampler seed, view) tuple
+across runs; Blender's Cycles renderer is not deterministic across
+Blender versions even at fixed seeds. Mitsuba is BSD-3, forkable, and
+its Python API integrates cleanly with the workspace's PyTorch tooling
+(via `drjit`). Fork lives at `v-sekai-fabric/mitsuba3` at manifest
+path `3-interactor/mitsuba3`. Blender stays blocklisted for the
+renders-not-reproducible reason; Mitsuba is the replacement.
+
 ### bnb NF4 4-bit is blocklisted as a QAFT / QAT path
 
 We want real 4-bit QAFT: a training loop where the base weights are
