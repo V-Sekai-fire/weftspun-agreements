@@ -1758,3 +1758,61 @@ docs). ggml's Vulkan backend, which is what replaces WebGPU.
 
 **Substitute:** ggml Vulkan backend + Godot's native Vulkan
 renderer + MoltenVK on macOS.
+
+### glslc is blocklisted as a GLSL-to-SPIR-V compiler
+
+Operator directive 2026-09-09, verbatim: *"Godot uses a different glsl
+compiler. Do not use glslc."*
+
+**What it cost before the row existed.** `modules/ggml`'s Vulkan backend
+baked 1392 SPIR-V variants by shelling out to `glslc` once per variant.
+Thirteen CI rows died at the SCons **reading** phase with `glslc not
+found` — before a single translation unit compiled, because the bake runs
+outside the dependency graph. The failure is not "a shader did not
+compile"; it is "the build cannot start on a host without the Vulkan SDK",
+and every cross-compile host counts.
+
+**The deployment host never has the Vulkan SDK, and correctly never
+needs one.** SPIR-V is baked at build time: each variant lands in the
+binary as a `const unsigned char[]` opening with the SPIR-V magic
+`0x07230203`, and `ggml-vulkan.cpp` hands those bytes straight to
+`vk::ShaderModuleCreateInfo` — it references no compiler at all, at any
+point. That is the shape of the whole objection. `glslc` put an SDK
+requirement on the **build** host for something the **deployment** host
+is designed never to need, and a dependency that exists at only one end
+of that is a dependency in the wrong place.
+
+**Why the tree does not need it.** `glslc` is shaderc's CLI, and shaderc
+is a wrapper around glslang. Godot already vendors glslang 16.1.0 plus
+the SPIRV backend at `thirdparty/glslang/`, and `modules/glslang` already
+builds it. Reaching for `glslc` adds a second, externally installed
+toolchain to do a job the tree does in-process, and makes a build host
+requirement out of it.
+
+**Measured, 2026-09-10, on the 134 `.comp` in ggml's Vulkan backend:**
+
+| | with `glslc` | Godot's glslang |
+| --- | --- | --- |
+| full bake, 1392 variants | 23.3 s | no process spawn per variant |
+| process spawns | 1392 `fork`+`execvp` | 0 |
+| SPIR-V bytes | 32.43 MB | 35.70 MB (+10.1%) |
+| generated `.comp.cpp` | 140.08 MB | 154.71 MB (+10.5%) |
+
+The +10% is `spirv-opt`: `modules/glslang/SCsub` sets `ENABLE_OPT=0` and
+SPIRV-Tools is not vendored, so 1047 of the 1392 variants lose `-O`. That
+is the price of the row and it is paid knowingly. The other 345 are
+unchanged — upstream ggml already disables `-O` on them over three
+miscompiles. Whether unoptimized SPIR-V slows first-run pipeline creation
+on a real Vulkan GPU is **not** measured; this desk is Metal.
+
+**What this blocks.** `glslc` on a build host, a `GLSLC` environment
+variable, `VULKAN_SDK/bin/glslc` discovery, and vendoring shaderc to get
+it. A build that fails because a host lacks `glslc` is the defect this row
+names.
+
+**What the row does not cover.** `glslangValidator` or `spirv-val` /
+`spirv-dis` used by hand at a desk to check output. Reading shaderc's
+source. SPIR-V itself, which is the format both compilers emit.
+
+**Substitute:** Godot's vendored glslang at `thirdparty/glslang/`, called
+in-process rather than spawned.
