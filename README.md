@@ -1,11 +1,11 @@
-# Weftspun agreements
+# weftspun-agreements
 
-Living home for the workspace's working agreements: **CLAUDE.md**, **BLOCKLIST.md**, **KEYPOINTS.md**, **PITFALLS.md**.
+An earlier copy of the weftspun workspace's working agreements, superseded by `V-Sekai-fire/manuals-weftspun`.
 
-Split out from `v-sekai-fabric/request-for-discussion` (now archived) on 2026-09-06 to unblock ongoing doctrine edits. Reached the workspace root through `weftspun-keypoint`'s `default.xml`:
+## What it is for
 
-```xml
-<linkfile src="CLAUDE.md" dest="CLAUDE.md" />
-```
+It holds a copy of the working agreements, the blocklist, the key points and the pitfalls, beside a set of rented-compute training scripts. The live agreements, and every edit to them, are in `V-Sekai-fire/manuals-weftspun`; read and change them there.
 
-`BLOCKLIST.md` is kept in one-to-one agreement with `CLAUDE.md`'s blocklist table via `scripts/check_blocklist_detail.py` (in the archived RFD repo's `scripts/`; re-home separately if resurrected).
+## Licence
+
+There is no licence file; `CITATION.cff` declares Apache-2.0 and MIT.
