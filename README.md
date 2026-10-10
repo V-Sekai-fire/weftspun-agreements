@@ -8,4 +8,4 @@ It holds a copy of the working agreements, the blocklist, the key points and the
 
 ## Licence
 
-There is no licence file; `CITATION.cff` declares Apache-2.0 and MIT.
+MIT. See [LICENSE](LICENSE).
